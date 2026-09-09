@@ -1,4 +1,5 @@
 --dir=.
+--file=../../.github/scripts/approve_stale_lead_maintainer_prs.rb
 --enable-experimental-requires-ancestor
 --enable-experimental-rspec
 --ignore=/vendor/bundle

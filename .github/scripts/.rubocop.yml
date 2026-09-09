@@ -1,0 +1,11 @@
+inherit_from:
+  - ../../Library/.rubocop.yml
+
+Homebrew/NegateInclude:
+  Exclude:
+    # Homebrew's core extensions are not available in this standalone script.
+    - approve_stale_lead_maintainer_prs.rb
+
+Sorbet/RedundantExtendTSig:
+  Exclude:
+    - approve_stale_lead_maintainer_prs.rb
