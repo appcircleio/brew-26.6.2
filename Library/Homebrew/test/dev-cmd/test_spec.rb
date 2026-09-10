@@ -14,6 +14,12 @@ RSpec.describe Homebrew::DevCmd::Test do
     setup_test_formula "testball", <<~'RUBY', tab_attributes: { installed_on_request: true }
       test do
         assert_equal "test", shell_output("#{bin}/test")
+        (logs/"testpath").write(testpath)
+        require "socket"
+        (testpath/"sockets").mkpath
+        UNIXServer.open("sockets/test.sock") do
+          UNIXSocket.open("sockets/test.sock", &:close)
+        end
       end
     RUBY
     formula_prefix = Formula["testball"].prefix
@@ -30,6 +36,8 @@ RSpec.describe Homebrew::DevCmd::Test do
       .to output(/Testing testball/).to_stdout
       .and not_to_output.to_stderr
       .and be_a_success
+
+    expect(Pathname((Formula["testball"].logs/"testpath").read)).not_to exist
   end
 
   it "blocks network access when test phase is offline", :integration_test, :needs_sandbox do
@@ -40,6 +48,10 @@ RSpec.describe Homebrew::DevCmd::Test do
     setup_test_formula formula_name, <<~RUBY, tab_attributes: { installed_on_request: true }
       deny_network_access! :test
       test do
+        require "socket"
+        UNIXServer.open("test.sock") do
+          UNIXSocket.open("test.sock", &:close)
+        end
         system "curl", "example.org"
       end
     RUBY

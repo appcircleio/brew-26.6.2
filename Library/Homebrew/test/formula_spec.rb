@@ -33,6 +33,61 @@ RSpec.describe Formula do
     end
   end
 
+  describe "#run_test" do
+    let(:f) { Testball.new }
+    let(:testpath) { mktmpdir }
+
+    it "uses the test directory supplied by the parent" do
+      ENV["HOMEBREW_TEST_PATH"] = testpath.to_s
+      observed = []
+      allow(f).to receive(:test) do
+        observed.push(f.testpath, Pathname.pwd, Pathname(Dir.home), ENV.fetch("HOMEBREW_TEST_PATH", nil))
+      end
+
+      f.run_test
+
+      expect(observed).to eq([testpath, testpath, testpath, nil])
+    end
+
+    it "preserves an environment-supplied directory and its contents" do
+      ENV["HOMEBREW_TEST_PATH"] = testpath.to_s
+      (testpath/"existing").write("keep")
+      allow(f).to receive(:test)
+
+      f.run_test
+
+      expect(testpath/"existing").to exist
+    end
+
+    it "preserves an environment-supplied directory when the test fails" do
+      ENV["HOMEBREW_TEST_PATH"] = testpath.to_s
+      (testpath/"existing").write("keep")
+      allow(f).to receive(:test).and_raise("test failed")
+
+      expect { f.run_test }.to raise_error("test failed")
+      expect(testpath/"existing").to exist
+    end
+
+    it "preserves an environment-supplied directory when entering it fails" do
+      ENV["HOMEBREW_TEST_PATH"] = testpath.to_s
+      (testpath/"existing").write("keep")
+      allow(Dir).to receive(:chdir).and_call_original
+      allow(Dir).to receive(:chdir).with(testpath).and_raise(Errno::EACCES)
+
+      expect { f.run_test }.to raise_error(Errno::EACCES)
+      expect(testpath/"existing").to exist
+    end
+
+    it "retains the supplied test directory when requested" do
+      ENV["HOMEBREW_TEST_PATH"] = testpath.to_s
+      allow(f).to receive(:test) { Pathname("marker").write("test") }
+
+      f.run_test(keep_tmp: true)
+
+      expect(testpath/"marker").to exist
+    end
+  end
+
   describe "::new" do
     let(:klass) do
       Class.new(described_class) do

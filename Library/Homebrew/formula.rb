@@ -3432,8 +3432,10 @@ class Formula
     ENV.clear_sensitive_environment!
     Utils::Git.set_name_email!
 
-    mktemp("#{name}-test") do |staging|
-      staging.retain! if keep_tmp
+    test_path = ENV.delete("HOMEBREW_TEST_PATH")
+    Mktemp.new("#{name}-test", retain: keep_tmp || !test_path.nil?,
+                               path:   (Pathname(test_path) if test_path)).run do |staging|
+      staging.quiet! if test_path
       testpath = staging.tmpdir
       raise "Test path is unexpectedly unset." if testpath.nil?
 
